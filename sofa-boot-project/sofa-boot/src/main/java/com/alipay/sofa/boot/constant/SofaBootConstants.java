@@ -170,6 +170,16 @@ public class SofaBootConstants {
      */
     public static final String  SOFABOOT_HEALTH_CHECK_NOT_READY_MSG                          = "App is still in startup process, please try later!";
 
+    /**
+     * interface-type-check config.
+     */
+    public static final String  SOFABOOT_COMPONENT_CHECK_INTERFACE_TYPE_ENABLED              = "com.alipay.sofa.healthcheck.component.check.interfacetype.enabled";
+
+    /**
+     * default interface-type-check value.
+     */
+    public static final boolean SOFABOOT_COMPONENT_CHECK_INTERFACE_TYPE_DEFAULT_ENABLED      = false;
+
     /** framework constants **/
     public static String        APPLICATION                                                  = "SOFABOOT-APPLICATION";
     public static String        PROCESSORS_OF_ROOT_APPLICATION_CONTEXT                       = "PROCESSORS_OF_ROOT_APPLICATION_CONTEXT";

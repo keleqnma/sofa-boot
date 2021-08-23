@@ -16,12 +16,14 @@
  */
 package com.alipay.sofa.runtime.service.component.impl;
 
-import java.util.Map;
-
 import com.alipay.sofa.boot.util.StringUtils;
 import com.alipay.sofa.runtime.model.InterfaceMode;
 import com.alipay.sofa.runtime.service.component.AbstractContract;
 import com.alipay.sofa.runtime.service.component.Service;
+import com.alipay.sofa.runtime.spi.health.HealthResult;
+
+import java.util.Arrays;
+import java.util.Map;
 
 /**
  * Service Implementation
@@ -29,38 +31,64 @@ import com.alipay.sofa.runtime.service.component.Service;
  * @author xuanbei 18/3/1
  */
 public class ServiceImpl extends AbstractContract implements Service {
-    private Object target;
+  private Object target;
 
-    public ServiceImpl(String uniqueId, Class<?> interfaceType, Object target) {
-        super(uniqueId, interfaceType);
-        this.target = target;
-    }
+  public ServiceImpl(String uniqueId, Class<?> interfaceType, Object target) {
+    super(uniqueId, interfaceType);
+    this.target = target;
+  }
 
-    public ServiceImpl(String uniqueId, Class<?> interfaceType, InterfaceMode interfaceMode,
-                       Object target) {
-        super(uniqueId, interfaceType, interfaceMode);
-        this.target = target;
-    }
+  public ServiceImpl(
+      String uniqueId, Class<?> interfaceType, InterfaceMode interfaceMode, Object target) {
+    super(uniqueId, interfaceType, interfaceMode);
+    this.target = target;
+  }
 
-    public ServiceImpl(String uniqueId, Class<?> interfaceType, InterfaceMode interfaceMode,
-                       Object target, Map<String, String> property) {
-        super(uniqueId, interfaceType, interfaceMode, property);
-        this.target = target;
-    }
+  public ServiceImpl(
+      String uniqueId,
+      Class<?> interfaceType,
+      InterfaceMode interfaceMode,
+      Object target,
+      Map<String, String> property) {
+    super(uniqueId, interfaceType, interfaceMode, property);
+    this.target = target;
+  }
 
-    @Override
-    public Object getTarget() {
-        return target;
-    }
+  @Override
+  public Object getTarget() {
+    return target;
+  }
 
-    @Override
-    public void setUniqueId(String uniqueId) {
-        this.uniqueId = uniqueId;
-    }
+  @Override
+  public void setUniqueId(String uniqueId) {
+    this.uniqueId = uniqueId;
+  }
 
-    @Override
-    public String toString() {
-        return this.getInterfaceType().getName()
-               + (StringUtils.hasText(uniqueId) ? ":" + uniqueId : "");
+  @Override
+  public String toString() {
+    return this.getInterfaceType().getName()
+        + (StringUtils.hasText(uniqueId) ? ":" + uniqueId : "");
+  }
+
+  /**
+   * 健康检查
+   *
+   * @return 健康检查结果
+   */
+  @Override
+  public HealthResult isHealthy() {
+    HealthResult result = new HealthResult(this.toString());
+    boolean isHealthy = false;
+    if (this.target != null && this.target.getClass() != null) {
+      Class<?>[] targetInterfaces = this.target.getClass().getInterfaces();
+      if (Arrays.asList(targetInterfaces).contains(this.interfaceType)) {
+        isHealthy = true;
+      }
     }
+    result.setHealthy(isHealthy);
+    String report =
+        "[" + result.getHealthName() + "," + (result.isHealthy() ? "passed" : "failed") + "]";
+    result.setHealthReport(report);
+    return result;
+  }
 }

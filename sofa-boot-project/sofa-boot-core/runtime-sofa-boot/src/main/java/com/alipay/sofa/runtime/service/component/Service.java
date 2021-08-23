@@ -17,6 +17,7 @@
 package com.alipay.sofa.runtime.service.component;
 
 import com.alipay.sofa.runtime.spi.binding.Contract;
+import com.alipay.sofa.runtime.spi.health.HealthResult;
 
 /**
  * Service Definition
@@ -35,4 +36,11 @@ public interface Service extends Contract {
      * set unique id
      */
     void setUniqueId(String uniqueId);
+
+    /**
+     * check target health
+     *
+     * @return check result
+     */
+    HealthResult isHealthy();
 }

@@ -16,12 +16,7 @@
  */
 package com.alipay.sofa.runtime.service.component;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-
+import com.alipay.sofa.boot.constant.SofaBootConstants;
 import com.alipay.sofa.runtime.api.ServiceRuntimeException;
 import com.alipay.sofa.runtime.api.component.Property;
 import com.alipay.sofa.runtime.log.SofaLogger;
@@ -34,6 +29,13 @@ import com.alipay.sofa.runtime.spi.component.Implementation;
 import com.alipay.sofa.runtime.spi.component.SofaRuntimeContext;
 import com.alipay.sofa.runtime.spi.health.HealthResult;
 import com.alipay.sofa.runtime.spi.util.ComponentNameFactory;
+import org.springframework.beans.factory.annotation.Value;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Service Component
@@ -48,6 +50,10 @@ public class ServiceComponent extends AbstractComponent {
     private Service                   service;
     private BindingAdapterFactory     bindingAdapterFactory;
     private Map<String, Property>     properties                    = new ConcurrentHashMap<>();
+
+    @Value("${" + SofaBootConstants.SOFABOOT_COMPONENT_CHECK_INTERFACE_TYPE_ENABLED + ":"
+           + SofaBootConstants.SOFABOOT_COMPONENT_CHECK_INTERFACE_TYPE_DEFAULT_ENABLED + "}")
+    private boolean                   interfaceTypeCheckEnabled;
 
     public ServiceComponent(Implementation implementation, Service service,
                             BindingAdapterFactory bindingAdapterFactory,
@@ -308,13 +314,19 @@ public class ServiceComponent extends AbstractComponent {
     @Override
     public HealthResult isHealthy() {
         HealthResult healthResult = new HealthResult(componentName.getRawName());
-        healthResult.setHealthy(this.e == null);
-
+        boolean isHealthy = (this.e == null);
         String report = aggregateBindingHealth(service.getBindings());
+
+        if (interfaceTypeCheckEnabled) {
+            HealthResult interfaceTypeCheckResult = this.getService().isHealthy();
+            report += " " + interfaceTypeCheckResult.getHealthReport();
+            isHealthy = isHealthy && interfaceTypeCheckResult.isHealthy();
+        }
+
         if (e != null) {
             report += " [" + e.getMessage() + "]";
         }
-
+        healthResult.setHealthy(isHealthy);
         healthResult.setHealthReport(report);
         return healthResult;
     }

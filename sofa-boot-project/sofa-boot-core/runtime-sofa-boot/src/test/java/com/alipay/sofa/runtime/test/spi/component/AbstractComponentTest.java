@@ -16,70 +16,91 @@
  */
 package com.alipay.sofa.runtime.test.spi.component;
 
-import java.lang.reflect.Field;
-import java.util.Map;
-
 import com.alipay.sofa.runtime.api.component.ComponentName;
+import com.alipay.sofa.runtime.api.component.Property;
+import com.alipay.sofa.runtime.model.ComponentStatus;
+import com.alipay.sofa.runtime.model.ComponentType;
+import com.alipay.sofa.runtime.service.component.impl.ServiceImpl;
+import com.alipay.sofa.runtime.spi.component.AbstractComponent;
 import com.alipay.sofa.runtime.spi.health.HealthResult;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.alipay.sofa.runtime.api.component.Property;
-import com.alipay.sofa.runtime.model.ComponentStatus;
-import com.alipay.sofa.runtime.model.ComponentType;
-import com.alipay.sofa.runtime.spi.component.AbstractComponent;
+import java.lang.reflect.Field;
+import java.util.Map;
 
-/**
- * @author xuanbei
- */
+/** @author xuanbei */
 public class AbstractComponentTest {
-    private AbstractComponent abstractComponent = new AbstractComponent() {
-                                                    @Override
-                                                    public ComponentType getType() {
-                                                        return null;
-                                                    }
+  private AbstractComponent abstractComponent =
+      new AbstractComponent() {
+        @Override
+        public ComponentType getType() {
+          return null;
+        }
 
-                                                    @Override
-                                                    public Map<String, Property> getProperties() {
-                                                        return null;
-                                                    }
-                                                };
+        @Override
+        public Map<String, Property> getProperties() {
+          return null;
+        }
+      };
 
-    @Test
-    public void testActivate() throws Exception {
-        abstractComponent.register();
-        Assert.assertEquals(abstractComponent.getState(), ComponentStatus.REGISTERED);
-        abstractComponent.resolve();
-        Assert.assertEquals(abstractComponent.getState(), ComponentStatus.RESOLVED);
-        abstractComponent.activate();
-        Assert.assertEquals(abstractComponent.getState(), ComponentStatus.ACTIVATED);
-        abstractComponent.deactivate();
-        Assert.assertEquals(abstractComponent.getState(), ComponentStatus.RESOLVED);
-    }
+  @Test
+  public void testActivate() throws Exception {
+    abstractComponent.register();
+    Assert.assertEquals(abstractComponent.getState(), ComponentStatus.REGISTERED);
+    abstractComponent.resolve();
+    Assert.assertEquals(abstractComponent.getState(), ComponentStatus.RESOLVED);
+    abstractComponent.activate();
+    Assert.assertEquals(abstractComponent.getState(), ComponentStatus.ACTIVATED);
+    abstractComponent.deactivate();
+    Assert.assertEquals(abstractComponent.getState(), ComponentStatus.RESOLVED);
+  }
 
-    @Test
-    public void testIsHealthy() throws Exception {
-        Field componentNameField = AbstractComponent.class.getDeclaredField("componentName");
-        componentNameField.setAccessible(true);
-        ComponentName componentName = new ComponentName(new ComponentType("healthy"), "test");
-        componentNameField.set(abstractComponent, componentName);
+  @Test
+  public void testIsHealthy() throws Exception {
+    Field componentNameField = AbstractComponent.class.getDeclaredField("componentName");
+    componentNameField.setAccessible(true);
+    ComponentName componentName = new ComponentName(new ComponentType("healthy"), "test");
+    componentNameField.set(abstractComponent, componentName);
 
-        Assert.assertEquals("healthy:test", abstractComponent.dump());
+    Assert.assertEquals("healthy:test", abstractComponent.dump());
 
-        abstractComponent.unregister();
-        abstractComponent.register();
-        abstractComponent.resolve();
-        abstractComponent.activate();
-        Assert.assertTrue(abstractComponent.isHealthy().isHealthy());
+    abstractComponent.unregister();
+    abstractComponent.register();
+    abstractComponent.resolve();
+    abstractComponent.activate();
+    Assert.assertTrue(abstractComponent.isHealthy().isHealthy());
 
-        abstractComponent.exception(new RuntimeException("this is a test exception"));
-        HealthResult healthResult = abstractComponent.isHealthy();
-        Assert.assertFalse(healthResult.isHealthy());
-        Assert.assertEquals("this is a test exception", healthResult.getHealthReport());
+    abstractComponent.exception(new RuntimeException("this is a test exception"));
+    HealthResult healthResult = abstractComponent.isHealthy();
+    Assert.assertFalse(healthResult.isHealthy());
+    Assert.assertEquals("this is a test exception", healthResult.getHealthReport());
 
-        abstractComponent.deactivate();
-        Assert.assertFalse(abstractComponent.isHealthy().isHealthy());
-        abstractComponent.unregister();
-    }
+    abstractComponent.deactivate();
+    Assert.assertFalse(abstractComponent.isHealthy().isHealthy());
+    abstractComponent.unregister();
+  }
 
+  private interface SampleService {
+    public void method();
+  }
+
+  private class SampleServiceImpl implements AbstractComponentTest.SampleService {
+    @Override
+    public void method() {}
+  }
+
+  @Test
+  public void testTargetWithoutInterface() throws Exception {
+    ServiceImpl serviceWithoutInterface =
+        new ServiceImpl("uniqueId", SampleService.class, new Object());
+    HealthResult healthResult = serviceWithoutInterface.isHealthy();
+    Assert.assertFalse(healthResult.isHealthy());
+    Assert.assertEquals(
+        "[" + healthResult.getHealthName() + "," + "failed" + "]", healthResult.getHealthReport());
+
+    ServiceImpl serviceWithInterface =
+        new ServiceImpl("uniqueId", SampleService.class, new SampleServiceImpl());
+    Assert.assertTrue(serviceWithInterface.isHealthy().isHealthy());
+  }
 }
